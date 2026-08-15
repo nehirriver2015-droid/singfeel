@@ -1,59 +1,64 @@
+import streamlit as st
 from textblob import TextBlob
 
-app = Flask(__name__)
+# Sayfa Konfigürasyonu
+st.set_page_config(
+    page_title="SignFeel AI",
+    page_icon="🎭",
+    layout="centered"
+)
 
-@app.route('/analyze-emotion', methods=['POST'])
-def analyze_emotion():
-    """
-    Kullanıcının girdiği metnin duygusunu ve tonunu analiz eden API servisi.
-    """
-    data = request.get_json()
-    
-    if not data or 'text' not in data:
-        return jsonify({"error": "Lütfen analiz edilecek bir metin gönderin."}), 400
+# Başlıklar
+st.title("🎭 SignFeel")
+st.caption("Next-Gen Emotion-Driven Accessible Communication Platform")
+st.write("Duygularını seç veya metnini yaz; yapay zeka duyguyu analiz edip konuşma tonunu ayarlasın.")
+
+st.divider()
+
+# 1. DUYGU SEÇİMİ
+st.subheader("1. Duygu Durumu Seçin")
+mood = st.radio(
+    "Hangi duygu tonuyla konuşmak istersiniz?",
+    ["😄 Mutlu (Happy)", "🚀 Heyecanlı (Excited)", "🌿 Sakin (Calm)", "🎯 Ciddi (Serious)"],
+    horizontal=True
+)
+
+# 2. METİN GİRİŞİ
+st.subheader("2. Mesajınızı Yazın")
+user_text = st.text_area("Aklınızdan geçenleri yazın:", placeholder="Hello! I am excited to share this project with you...")
+
+# Hızlı Cümle Butonları
+col1, col2, col3 = st.columns(3)
+with col1:
+    if st.button("👋 Merhaba"):
+        user_text = "Hello! How are you today?"
+with col2:
+    if st.button("🙏 Teşekkürler"):
+        user_text = "Thank you so much for your support!"
+with col3:
+    if st.button("🆘 Yardım"):
+        user_text = "I need a quick moment of assistance, please."
+
+# 3. ANALİZ VE SESLENDİRME
+if st.button("🔊 Duygu Tonuyla Seslendir", type="primary", use_container_width=True):
+    if user_text.strip() != "":
+        # Duygu Analizi (TextBlob)
+        blob = TextBlob(user_text)
+        polarity = round(blob.sentiment.polarity, 2)
         
-    text = data['text']
-    
-    # TextBlob kütüphanesi ile duygu analizi yapılıyor
-    analysis = TextBlob(text)
-    polarity = analysis.sentiment.polarity  # -1.0 (Olumsuz) ile +1.0 (Olumlu) arası
-    
-    # Duygu durumunu ve yapay ses ayarlarını belirleme
-    if polarity > 0.5:
-        detected_mood = "excited"
-        pitch = 1.5
-        rate = 1.3
-        message = "Yüksek olumlu duygu tespit edildi."
-    elif polarity > 0.1:
-        detected_mood = "happy"
-        pitch = 1.3
-        rate = 1.1
-        message = "Olumlu duygu tespit edildi."
-    elif polarity < -0.1:
-        detected_mood = "serious"
-        pitch = 0.7
-        rate = 0.9
-        message = "Ciddi / Olumsuz duygu tespit edildi."
+        st.success(f"Analiz Tamamlandı! Duygu Skoru: {polarity}")
+        
+        # Tarayıcı Seslendirme Motoru
+        html_code = f"""
+            <script>
+                var msg = new SpeechSynthesisUtterance("{user_text}");
+                msg.lang = 'en-US';
+                window.speechSynthesis.speak(msg);
+            </script>
+        """
+        st.components.v1.html(html_code, height=0)
     else:
-        detected_mood = "calm"
-        pitch = 0.9
-        rate = 0.9
-        message = "Nötr / Sakin duygu tespit edildi."
+        st.warning("Lütfen önce bir metin girin.")
 
-    # Yanıt oluşturma
-    response_data = {
-        "text": text,
-        "sentiment_score": round(polarity, 2),
-        "mood": detected_mood,
-        "voice_settings": {
-            "pitch": pitch,
-            "rate": rate
-        },
-        "status_message": message
-    }
-
-    return jsonify(response_data), 200
-
-if __name__ == '__main__':
-    print("🚀 SignFeel AI Backend Sunucusu Çalışıyor...")
-    app.run(debug=True, port=5000)
+st.divider()
+st.caption("Developed by an 11-Year-Old Visionary Developer • SignFeel AI")
